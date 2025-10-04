@@ -78,6 +78,16 @@ def split_text(text: str, chunk_size: int = 300, overlap: int = 50) -> list[str]
     return chunks
 
 
+def split_text_per_page(text: str) -> list[str]:
+    """
+    PDFの1ページごとにチャンク化する
+    改ページ区切り（'\n\n'）は無視して、ページ単位で1チャンクとする
+    """
+    # 改ページで区切られたテキストを1ページごとのリストにする
+    pages = [page.strip() for page in text.split("\n\n") if page.strip()]
+    return pages
+
+
 def store_qdrant(pdfs: list[str]):
     debug_dir = Path("./debug_chunks")
 
@@ -86,7 +96,8 @@ def store_qdrant(pdfs: list[str]):
         print(f"{pdf} をqdrantに保存中")
         pdf_name = os.path.basename(pdf)
         pdf_txt = load_pdf_document(pdf)
-        chunks = split_text(pdf_txt)
+        # chunks = split_text(pdf_txt)
+        chunks = split_text_per_page(pdf_txt)
 
         # 🔍 デバッグ出力用ディレクトリを作成
         if DEBUG_CHUNK_OUTPUT:
