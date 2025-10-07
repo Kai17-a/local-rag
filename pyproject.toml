@@ -6,12 +6,16 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "chromadb>=1.1.0",
+    "fastapi>=0.118.0",
     "openai>=2.1.0",
     "pdfplumber>=0.11.7",
+    "pydantic>=2.11.9",
     "python-docs>=0.1.0",
     "python-docx>=1.2.0",
+    "python-multipart>=0.0.20",
     "qdrant-client>=1.15.1",
     "requests>=2.32.5",
     "streamkit>=0.3.2",
     "streamlit>=1.50.0",
+    "uvicorn>=0.37.0",
 ]
