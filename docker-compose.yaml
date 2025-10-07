@@ -5,11 +5,3 @@ services:
       - ./qdrant_storage:/qdrant/storage
     ports:
       - 6333:6333
-
-  ollama:
-    image: ollama/ollama:latest
-    volumes:
-      - ./ollama:/ollama
-    ports:
-      - 12000:12000
-    command: /bin/sh -c "ollama pull llama3 && ollama pull nomic-embed-text && ollama serve"
