@@ -121,6 +121,27 @@ async def upload_file(files: list[UploadFile] = File(...)):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+class RegisterTextRequest(BaseModel):
+    text: str
+    source: str = "input_text"
+
+
+@app.post("/register_text/", status_code=status.HTTP_201_CREATED)
+async def register_text_endpoint(req: RegisterTextRequest):
+    """
+    テキスト文字列をベクターストアに登録
+    """
+    if not req.text or not req.text.strip():
+        return JSONResponse({"error": "Text is required."}, status_code=400)
+    # sourceは省略可
+    n_points = await run_in_threadpool(
+        app.state.document_ingest_service.register_text, req.text, req.source
+    )
+    return JSONResponse(
+        {"message": f"{n_points} chunk(s) registered.", "source": req.source}
+    )
+
+
 def _save_upload_file(upload_file: UploadFile, destination: Path):
     with destination.open("wb") as out_file:
         shutil.copyfileobj(upload_file.file, out_file)

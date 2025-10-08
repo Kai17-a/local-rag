@@ -92,3 +92,34 @@ class DocumentIngestService:
             logger.warning("登録可能なファイルが見つかりません。")
             return
         self.store_qdrant(files)
+
+    def register_text(self, text: str, source: str = "input_text"):
+        """
+        1つのテキストをチャンク分割し、ベクターストアに登録する
+        """
+
+        chunks = []
+        chunk_size = 300
+        overlap = 50
+        for i in range(0, len(text), chunk_size - overlap):
+            chunk = text[i : i + chunk_size]
+            if chunk.strip():
+                chunks.append(chunk.strip())
+
+        points = []
+        for idx, chunk in enumerate(chunks):
+            embed = self.embedder.embed(chunk)
+            if embed:
+                points.append(
+                    PointStruct(
+                        id=str(uuid.uuid4()),
+                        vector=embed,
+                        payload={
+                            "text": chunk,
+                            "source": source,
+                            "chunk_id": idx,
+                        },
+                    )
+                )
+        self.vector_store.upsert_points(points)
+        return len(points)
