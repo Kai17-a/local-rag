@@ -1,14 +1,14 @@
 from fastapi import FastAPI, status, UploadFile, File, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
 from adapters.llm import OllamaOpenAIClient
 from adapters.vectorstore import QdrantVectorStore
 from adapters.embedder import OllamaEmbedder
 from services.qa_service import QAService
-from services.pdf_ingest_service import PDFIngestService
+from services.document_ingest_service import DocumentIngestService  # ← ここに変更
 from utils.logger import get_logger
 from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
 
 import tempfile
 import shutil
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     app.state.qa_service = QAService(
         app.state.llm_client, app.state.embedder, app.state.vector_store
     )
-    app.state.pdf_ingest_service = PDFIngestService(
+    app.state.document_ingest_service = DocumentIngestService(
         app.state.embedder, app.state.vector_store
     )
     yield
@@ -36,10 +36,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-
-class QueryRequest(BaseModel):
-    query: str
 
 
 @app.get("/", status_code=status.HTTP_200_OK)
@@ -59,7 +55,7 @@ async def read_root(q: str = None):
 @app.post("/", status_code=status.HTTP_201_CREATED)
 async def store_document(request: Request):
     """
-    PDF登録エンドポイント
+    ドキュメント登録エンドポイント
     JSON bodyで{"directory": "..."}を受け取る
     """
     try:
@@ -84,26 +80,27 @@ async def store_document(request: Request):
             return JSONResponse(
                 {"error": f"Directory '{directory}' not found."}, status_code=400
             )
-        await run_in_threadpool(app.state.pdf_ingest_service.ingest, directory)
-        return JSONResponse({"message": "PDF documents indexed successfully."})
+        await run_in_threadpool(app.state.document_ingest_service.ingest, directory)
+        return JSONResponse({"message": "Text/PDF documents indexed successfully."})
     except Exception as e:
         logger.error(f"Error in store_document: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/upload/", status_code=status.HTTP_201_CREATED)
-async def upload_pdf(files: list[UploadFile] = File(...)):
+async def upload_file(files: list[UploadFile] = File(...)):
     """
-    複数PDFファイルをアップロードし、そのままベクトル登録
+    複数PDF/テキストファイルをアップロードし、そのままベクトル登録
     """
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
             saved_files = []
             for file in files:
-                if not file.filename.lower().endswith(".pdf"):
+                ext = file.filename.lower().split(".")[-1]
+                if ext not in ("pdf", "txt"):
                     logger.warning(
-                        f"アップロードファイルがPDFではありません: {file.filename}"
+                        f"アップロードファイルがPDFまたはTXTではありません: {file.filename}"
                     )
                     continue
                 dest_file = temp_path / file.filename
@@ -111,16 +108,16 @@ async def upload_pdf(files: list[UploadFile] = File(...)):
                 saved_files.append(str(dest_file))
             if not saved_files:
                 return JSONResponse(
-                    {"error": "No valid PDF files uploaded."}, status_code=400
+                    {"error": "No valid PDF or TXT files uploaded."}, status_code=400
                 )
             await run_in_threadpool(
-                app.state.pdf_ingest_service.store_qdrant, saved_files
+                app.state.document_ingest_service.store_qdrant, saved_files
             )
             return JSONResponse(
-                {"message": f"{len(saved_files)} PDF(s) indexed successfully."}
+                {"message": f"{len(saved_files)} file(s) indexed successfully."}
             )
     except Exception as e:
-        logger.error(f"Error in upload_pdf: {e}")
+        logger.error(f"Error in upload_file: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
