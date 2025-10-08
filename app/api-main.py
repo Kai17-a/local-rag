@@ -5,7 +5,7 @@ from adapters.llm import OllamaOpenAIClient
 from adapters.vectorstore import QdrantVectorStore
 from adapters.embedder import OllamaEmbedder
 from services.qa_service import QAService
-from services.document_ingest_service import DocumentIngestService  # ← ここに変更
+from services.document_ingest_service import DocumentIngestService
 from utils.logger import get_logger
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
