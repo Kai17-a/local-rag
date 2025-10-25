@@ -1,8 +1,25 @@
+# 使用するモデルタイプを選択: "ollama" または "docker"
+model_type = "ollama"
+
 [ollama]
-base_url = "http://localhost:12000/v1"
-embed_url = "http://localhost:12000/api/embeddings"
+base_url = "http://localhost:11434/v1"
+embed_url = "http://localhost:11434/api/embeddings"
 model = "llama3:latest"
 embed_model = "nomic-embed-text"
+system_prompt = """
+あなたは有能なアシスタントです。日本語で回答してください
+質問内容が英語でも日本語で回答してください
+資料に書かれていない内容は絶対に答えないこと
+資料に書かれていない内容の推測の回答はしないこと
+例外的に資料に記載されている内容を組み合わせた推測はしていいものとする
+"""
+
+[docker]
+base_url = "http://localhost:12434/engines/llama.cpp/v1"
+chat_endpoint = "/chat/completions"
+embed_endpoint = "/embeddings"
+model = "ai/llama3.2"
+embed_model = "ai/embeddinggemma"
 system_prompt = """
 あなたは有能なアシスタントです。日本語で回答してください
 質問内容が英語でも日本語で回答してください
